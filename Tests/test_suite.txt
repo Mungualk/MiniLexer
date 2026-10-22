@@ -1,0 +1,8 @@
+// Programa de prueba integradora TecNM
+/* Este es un comentario
+    de bloque multilínea */
+if (x &gt;= 4) {
+    2x = x2 + 1.5625; // Expresión de prueba
+    string ciudad = &quot;Ithaca NY&quot;;
+    string err = &quot;Cadena sin cerrar ;
+}
