@@ -260,6 +260,7 @@ public class MiniLexer
 
         }
         catch
+
         (IOException e)
         {
             System.err.println("No se pudo leer el archivo: " + e.getMessage());
