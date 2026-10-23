@@ -1,5 +1,7 @@
-# Ignorar el archivo de configuracion de intellij IDEA
+build/
+out/
 .idea/
-
-#Archivo de compilación de salida
-.out/
+*.class
+hs_err_pid*.log
+hs_err_pid15084.log
+MiniLexer.iml
