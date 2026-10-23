@@ -165,8 +165,7 @@ public class MiniLexer
         }
         return new Token(Token.TipoToken.TOKEN_FLOAT_LITERAL, lexema, l, c);
     }
-
-    // ---- AFD de cadenas ----
+    
     private Token leerCadena(int l, int c) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append((char) avan());
