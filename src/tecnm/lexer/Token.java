@@ -1,3 +1,5 @@
+package tecnm.lexer;
+
 public class Token
 {
     public enum  TipoToken

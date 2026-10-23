@@ -1,3 +1,5 @@
+package tecnm.lexer;
+
 public class ErrorHandler
 {
     private int errores = 0;
@@ -8,7 +10,7 @@ public class ErrorHandler
         System.out.println("[Error Léxico] Línea " + lin + ", Columna " + col + ": Lexema no reconocido '" + lex + "'");
     }
 
-    public int getErrores()
+    public int getTotErrores()
     {
         return this.errores;
     }

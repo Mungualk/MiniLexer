@@ -1,3 +1,5 @@
+package tecnm.lexer;
+
 import java.util.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -100,16 +102,167 @@ public class MiniLexer
             int ch = inspeccionar();
             Token t;
 
-            //if(ch == -1) return new Token(Token.TipoToken.TOKEN_EOF, "", l, co);
-            // else if (esLetra(ch))
+            if(ch == -1) return new Token(Token.TipoToken.TOKEN_EOF, "", l, co);
+            else if (esLetra(ch)) t = esReservado(lin, col);
+            else if (esDigito(ch)) t = leerNum(lin, col);
+            else if (ch == '"') t = leerCadena(lin, col);
+            else t = leerSimbolo(ch, lin, col);
 
-            
+            if (t != null) return t;         // null = error ya reportado; seguimos
+        }
+
+    }
+
+    private Token esReservado(int l, int c) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        while(esLetra(inspeccionar()) || esDigito(inspeccionar()))
+        {
+            sb.append((char)avan());
+        }
+        String lexema = sb.toString();
+        if(Reserv.contains(lexema))
+        {
+            return new Token(Token.TipoToken.TOKEN_RESERVED, lexema, l, c);
+        }
+        if(!tablitaDeSimbolos.containsKey(lexema))
+        {
+            notasDeTabla = " -> [Registrado en Tabla de Símbolos]";
+        }
+        else
+        {
+            notasDeTabla = " -> [Referenciado de la Tabla de Símbolos]";
+        }
+        return new Token(Token.TipoToken.TOKEN_IDENTIFIER, lexema, l, c);
+    }
+
+    private Token leerNum(int l, int c) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        while (esDigito(inspeccionar()))
+        {
+            sb.append((char)avan());
+        }
+        if(inspeccionar() != '.')
+        {
+            return new Token(Token.TipoToken.TOKEN_INT_LITERAL, sb.toString(), l, c);
+        }
+
+        int pu = 0;
+        int ch;
+        while (esDigito(ch = inspeccionar()) || ch == '.')
+        {
+            if(ch == '.') pu++;
+            sb.append((char)avan());
+        }
+
+        String lexema = sb.toString();
+        boolean terminaEnPunto = lexema.endsWith(".");
+        if(pu > 1 || terminaEnPunto)
+        {
+            errores.mostrarErrores(l,c, lexema);
+            return (null);
+        }
+        return new Token(Token.TipoToken.TOKEN_FLOAT_LITERAL, lexema, l, c);
+    }
+
+    // ---- AFD de cadenas ----
+    private Token leerCadena(int l, int c) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        sb.append((char) avan());
+        int ch;
+        while ((ch = inspeccionar()) != '"' && ch != '\n' && ch != '\r' && ch != -1) {
+            sb.append((char) avan());
+        }
+        if (ch == '"') {
+            sb.append((char) avan());
+            return new Token(Token.TipoToken.TOKEN_STRING_LITERAL, sb.toString(), l, c);
+        }
+        errores.mostrarErrores(l, c, sb.toString());
+        return null;
+    }
+
+    // ---- Operadores, delimitadores y caracteres ilegales ----
+    private Token leerSimbolo(int ch, int l, int c) throws IOException {
+        avan();                                                   // consume el primer carácter
+        char a = (char) ch;
+
+        switch (a) {
+            case '+': case '-': case '*': case '/':
+                return new Token(Token.TipoToken.TOKEN_ARITH_OP, String.valueOf(a), l, c);
+
+            case '(': case ')': case '{': case '}': case ';': case ',':
+                return new Token(Token.TipoToken.TOKEN_SPECIAL_SYMBOL, String.valueOf(a), l, c);
+
+            case '!':
+                return new Token(Token.TipoToken.TOKEN_LOGIC_OP, "!", l, c);
+
+            case '=':
+                if (inspeccionar() == '=') { avan(); return new Token(Token.TipoToken.TOKEN_REL_OP, "==", l, c); }
+                return new Token(Token.TipoToken.TOKEN_ASSIGN_OP, "=", l, c);
+
+            case '>': case '<':
+                if (avan() == '=') { avan(); return new Token(Token.TipoToken.TOKEN_REL_OP, a + "=", l, c); }
+                return new Token(Token.TipoToken.TOKEN_REL_OP, String.valueOf(a), l, c);
+
+            case '&': case '|':
+                if (avan() == a) { avan(); return new Token(Token.TipoToken.TOKEN_LOGIC_OP, "" + a + a, l, c); }
+                modoPanico(l, c, String.valueOf(a));                 // '&' o '|' solitarios
+                return null;
+
+            default:                                                 // fuera del alfabeto: ~ @ # ...
+                modoPanico(l, c, String.valueOf(a));
+                return null;
         }
     }
 
+    private static boolean esSincronizacion(int c) {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ';';
+    }
+
+    /** Descarta caracteres hasta un delimitador de sincronización y reporta el error. */
+    private void modoPanico(int l, int c, String yaConsumido) throws IOException {
+        StringBuilder sb = new StringBuilder(yaConsumido);
+        int ch;
+        while ((ch = inspeccionar()) != -1 && !esSincronizacion(ch)) {
+            sb.append((char) avan());
+        }
+        errores.mostrarErrores(l, c, sb.toString());
+        // El delimitador NO se consume: ';' es un token válido y el espacio lo salta S0.
+    }
+
+    public String getNotaTabla()                  { return notasDeTabla; }
+    public Map<String, Simbolo> getTablaSimbolos(){ return tablitaDeSimbolos; }
+    public ErrorHandler getErrores()              { return errores; }
+
     public static void main(String[] args)
     {
-        //System.out.println("hola luis");
+        if (args.length != 1)
+        {
+            System.out.println("Uso: java -jar MiniLexer.jar <archivo.mc>");
+            return;
+        }
+        File archivo = new File(args[0]);
 
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(archivo, StandardCharsets.UTF_8))) {
+
+            MiniLexer lexer = new MiniLexer(br);
+            System.out.println(">>> INICIANDO ANÁLISIS LÉXICO: " + archivo.getName() + " <<<");
+
+            Token t;
+            while ((t = lexer.sigToken()).getTipo() != Token.TipoToken.TOKEN_EOF)
+            {
+                System.out.println(t + lexer.getNotaTabla());
+            }
+
+            System.out.println(">>> ANÁLISIS LÉXICO FINALIZADO CON " + lexer.getErrores().getTotErrores() + " ERROR(ES) <<<");
+
+        }
+        catch
+        (IOException e)
+        {
+            System.err.println("No se pudo leer el archivo: " + e.getMessage());
+        }
     }
 }
