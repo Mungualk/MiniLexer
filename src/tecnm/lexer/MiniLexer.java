@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 
 public class MiniLexer
 {
+    
     private static final Set <String> Reserv = Set.of("if", "then", "else", "while");
     private final BufferedReader reader;
     private int lin = 1, col = 1;
@@ -165,7 +166,7 @@ public class MiniLexer
         }
         return new Token(Token.TipoToken.TOKEN_FLOAT_LITERAL, lexema, l, c);
     }
-    
+
     private Token leerCadena(int l, int c) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append((char) avan());
