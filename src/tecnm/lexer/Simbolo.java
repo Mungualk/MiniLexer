@@ -1,5 +1,9 @@
 package tecnm.lexer;
 
+/**
+ * Entrada de la Tabla de Símbolos. Solo se crea en la PRIMERA aparición de un identificador; las apariciones
+ * posteriores reutilizan este mismo objeto, por eso guarda la posición inicial.
+ */
 public class Simbolo
 {
     private String lexema;
@@ -35,6 +39,7 @@ public class Simbolo
         return columnaInicial;
     }
 
+    /** Fila de tabla con columnas alineadas, útil para imprimir mas facil la tabla completa. */
     @Override
     public String toString()
     {
